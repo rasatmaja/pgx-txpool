@@ -9,15 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TxID an identifier for a transaction
-type TxID string
-
-// TxContextID an indentifier for a transaction ID in context
-type TxContextID string
-
-// ContextTxKey a key for a transaction ID in context
-const ContextTxKey TxContextID = "TX_POLL_ID"
-
 // Pool is a struct that wraps a pgx pool
 type Pool struct {
 	*pgxpool.Pool
