@@ -90,24 +90,21 @@ func (p *Pool) RollbackTX(ctx context.Context) error {
 	return tx.Rollback(ctx)
 }
 
-// execer is an typ for exec
-type execer func(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
-
 // Exec will execute a query
 // if transaction id is found in context
 // then use exec from transaction
 // otherwise it will use default exec from pgxpool
 func (p *Pool) Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error) {
-	// default execer will user func Exec from pgxpool
-	var execer execer = p.Pool.Exec
+	// if transaction id is found in context
+	// then use exec from transaction
 	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
-		// if transaction id is found in context
-		// then use exec from transaction
 		if tx, ok := p.txpool[txID]; ok {
-			execer = tx.Exec
+			return tx.Exec(ctx, sql, arguments...)
 		}
 	}
-	return execer(ctx, sql, arguments...)
+
+	// default will user func Exec from pgxpool
+	return p.Pool.Exec(ctx, sql, arguments...)
 }
 
 // VerifyTX will verify a transaction to make sure it is not in the pool
