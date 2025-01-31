@@ -2,7 +2,6 @@ package pgxtxpool
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -53,12 +52,12 @@ func (p *Pool) BeginTX(ctx context.Context) (context.Context, error) {
 func (p *Pool) CommitTX(ctx context.Context) error {
 	txID, ok := ctx.Value(ContextTxKey).(TxID)
 	if !ok {
-		return fmt.Errorf("no transaction id found in context")
+		return ErrTxPoolIDNotFound
 	}
 
 	tx, ok := p.txpool[txID]
 	if !ok {
-		return fmt.Errorf("transaction id not found in pool")
+		return ErrTxPoolNotFound
 	}
 
 	delete(p.txpool, txID)
@@ -69,12 +68,12 @@ func (p *Pool) CommitTX(ctx context.Context) error {
 func (p *Pool) RollbackTX(ctx context.Context) error {
 	txID, ok := ctx.Value(ContextTxKey).(TxID)
 	if !ok {
-		return fmt.Errorf("no transaction id found in context")
+		return ErrTxPoolIDNotFound
 	}
 
 	tx, ok := p.txpool[txID]
 	if !ok {
-		return fmt.Errorf("transaction id not found in pool")
+		return ErrTxPoolNotFound
 	}
 
 	delete(p.txpool, txID)
@@ -124,7 +123,7 @@ func (p *Pool) VerifyTX(ctx context.Context) error {
 		// if transaction id is found in context
 		// return error
 		if _, ok := p.txpool[txID]; ok {
-			return fmt.Errorf("transaction id still exists in pool")
+			return ErrTxPoolTrxStillExistsInPool
 		}
 	}
 	return nil
