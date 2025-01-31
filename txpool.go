@@ -1,4 +1,4 @@
-package pgxtxpoll
+package pgxtxpool
 
 import (
 	"context"
@@ -8,15 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-// TxID an identifier for a transaction
-type TxID string
-
-// TxContextID an indentifier for a transaction ID in context
-type TxContextID string
-
-// ContextTxKey a key for a transaction ID in context
-const ContextTxKey TxContextID = "TX_POLL_ID"
 
 // Pool is a struct that wraps a pgx pool
 type Pool struct {
@@ -90,24 +81,38 @@ func (p *Pool) RollbackTX(ctx context.Context) error {
 	return tx.Rollback(ctx)
 }
 
-// execer is an typ for exec
-type execer func(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
-
 // Exec will execute a query
 // if transaction id is found in context
 // then use exec from transaction
 // otherwise it will use default exec from pgxpool
 func (p *Pool) Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error) {
-	// default execer will user func Exec from pgxpool
-	var execer execer = p.Pool.Exec
+	// if transaction id is found in context
+	// then use exec from transaction
 	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
-		// if transaction id is found in context
-		// then use exec from transaction
 		if tx, ok := p.txpool[txID]; ok {
-			execer = tx.Exec
+			return tx.Exec(ctx, sql, arguments...)
 		}
 	}
-	return execer(ctx, sql, arguments...)
+
+	// default will use func Exec from pgxpool
+	return p.Pool.Exec(ctx, sql, arguments...)
+}
+
+// Query will execute a query
+// if transaction id is found in context
+// then use query from transaction
+// otherwise it will use default query from pgxpool
+func (p *Pool) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	// if transaction id is found in context
+	// then use query from transaction
+	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
+		if tx, ok := p.txpool[txID]; ok {
+			return tx.Query(ctx, sql, args...)
+		}
+	}
+
+	// default will use func Query from pgxpool
+	return p.Pool.Query(ctx, sql, args...)
 }
 
 // VerifyTX will verify a transaction to make sure it is not in the pool
