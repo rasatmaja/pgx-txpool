@@ -1,4 +1,4 @@
-package pgxtxpoll
+package pgxtxpool
 
 // TxID an identifier for a transaction
 type TxID string

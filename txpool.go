@@ -1,4 +1,4 @@
-package pgxtxpoll
+package pgxtxpool
 
 import (
 	"context"
