@@ -103,8 +103,25 @@ func (p *Pool) Exec(ctx context.Context, sql string, arguments ...any) (commandT
 		}
 	}
 
-	// default will user func Exec from pgxpool
+	// default will use func Exec from pgxpool
 	return p.Pool.Exec(ctx, sql, arguments...)
+}
+
+// Query will execute a query
+// if transaction id is found in context
+// then use query from transaction
+// otherwise it will use default query from pgxpool
+func (p *Pool) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	// if transaction id is found in context
+	// then use query from transaction
+	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
+		if tx, ok := p.txpool[txID]; ok {
+			return tx.Query(ctx, sql, args...)
+		}
+	}
+
+	// default will use func Query from pgxpool
+	return p.Pool.Query(ctx, sql, args...)
 }
 
 // VerifyTX will verify a transaction to make sure it is not in the pool
