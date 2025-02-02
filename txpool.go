@@ -15,9 +15,12 @@ type Pool struct {
 }
 
 // New will create a new connection pgx pool
-func New() *Pool {
-	var config *pgxpool.Config
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+func New(opts ...Option) *Pool {
+	var config config
+	for _, opt := range opts {
+		opt(&config)
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), config.ParseToPGXConfig())
 	if err != nil {
 		panic(err)
 	}
