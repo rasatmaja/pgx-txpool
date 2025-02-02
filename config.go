@@ -12,6 +12,13 @@ type config struct {
 	query url.Values
 }
 
+func (c *config) SetQuery(key, value string) {
+	if c.query == nil {
+		c.query = url.Values{}
+	}
+	c.query.Set(key, value)
+}
+
 // ParseToPGXConfig will parse dsn and query URL to pgxpool config
 func (c *config) ParseToPGXConfig() *pgxpool.Config {
 	c.dsn.Scheme = "postgres"
@@ -51,14 +58,14 @@ func SetDatabase(database string) Option {
 // WithSSLMode will set sslmode
 func WithSSLMode(mode string) Option {
 	return func(c *config) {
-		c.query.Set("sslmode", mode)
+		c.SetQuery("sslmode", mode)
 	}
 }
 
 // WithMaxConns will set max connections
 func WithMaxConns(maxConns int) Option {
 	return func(c *config) {
-		c.query.Set("pool_max_conns", fmt.Sprintf("%d", maxConns))
+		c.SetQuery("pool_max_conns", fmt.Sprintf("%d", maxConns))
 	}
 }
 
@@ -66,7 +73,7 @@ func WithMaxConns(maxConns int) Option {
 // ex: "30s", "5m"
 func WithMaxIdleConns(maxIdleConns string) Option {
 	return func(c *config) {
-		c.query.Set("pool_max_conn_idle_time", maxIdleConns)
+		c.SetQuery("pool_max_conn_idle_time", maxIdleConns)
 	}
 }
 
@@ -74,6 +81,6 @@ func WithMaxIdleConns(maxIdleConns string) Option {
 // ex: "30s", "5m"
 func WithMaxConnLifetime(maxConnLifetime string) Option {
 	return func(c *config) {
-		c.query.Set("pool_max_conn_lifetime", maxConnLifetime)
+		c.SetQuery("pool_max_conn_lifetime", maxConnLifetime)
 	}
 }
