@@ -1,0 +1,70 @@
+[
+    {
+        "test_case": "should success",
+        "error": false,
+        "user": {
+            "id": "USR001",
+            "name": "John Doe",
+            "balance": 1000
+        },
+        "transaction": [
+            {
+                "id": "TRX001",
+                "user_id": "USR001",
+                "type": "INITIAL_BALANCE",
+                "amount": 1000
+            }
+        ]
+    },
+    {
+        "test_case": "should rollback user data when create trx error",
+        "error": true,
+        "user": {
+            "id": "USR002",
+            "name": "Jane",
+            "balance": 2000
+        },
+        "transaction": [
+            {
+                "id": "TRX002",
+                "user_id": "XXXXX",
+                "type": "INITIAL_BALANCE",
+                "amount": 2000
+            }
+        ]
+    },
+    {
+        "test_case": "should success",
+        "error": false,
+        "user": {
+            "id": "USR003",
+            "name": "Peterson",
+            "balance": 3000
+        },
+        "transaction": [
+            {
+                "id": "TRX003",
+                "user_id": "USR003",
+                "type": "INITIAL_BALANCE",
+                "amount": 3000
+            }
+        ]
+    },
+    {
+        "test_case": "should success",
+        "error": false,
+        "user": {
+            "id": "USR004",
+            "name": "Waller",
+            "balance": 4000
+        },
+        "transaction": [
+            {
+                "id": "TRX004",
+                "user_id": "USR004",
+                "type": "INITIAL_BALANCE",
+                "amount": 4000
+            }
+        ]
+    }
+]
