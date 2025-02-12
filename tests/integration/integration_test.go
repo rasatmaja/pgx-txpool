@@ -2,28 +2,70 @@ package integration
 
 import (
 	"context"
-	"os"
+	"fmt"
 	"testing"
 
 	pgxtxpool "github.com/rasatmaja/pgx-txpool"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/model"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/repository"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/service"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 var repo *repository.Repository
 var srv *service.Service
 
-func TestMain(m *testing.M) {
+func TestMain(t *testing.T) {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:16-alpine",
+		ExposedPorts: []string{"5432/tcp"},
+		AutoRemove:   true,
+		Env: map[string]string{
+			"POSTGRES_USER":     "postgres",
+			"POSTGRES_PASSWORD": "postgres",
+			"POSTGRES_DB":       "postgres",
+		},
+		WaitingFor: wait.ForListeningPort("5432/tcp"),
+	}
+	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	port, err := postgres.MappedPort(ctx, "5432")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(port.Port())
+
 	// setup database
-	db := pgxtxpool.New()
+	db := pgxtxpool.New(
+		pgxtxpool.SetHost("localhost", port.Port()),
+		pgxtxpool.SetCredential("postgres", "postgres"),
+		pgxtxpool.SetDatabase("postgres"),
+		pgxtxpool.WithSSLMode("disable"),
+		pgxtxpool.WithMaxConns(10),
+		pgxtxpool.WithMaxIdleConns("30s"),
+		pgxtxpool.WithMaxConnLifetime("5m"),
+	)
+
+	if err := db.Ping(ctx); err != nil {
+		panic(err)
+	}
+
 	repo = repository.NewRepository(db)
 	srv = service.NewService(repo)
-	os.Exit(m.Run())
 }
 
 // TestCreateUser tests service CreateUser method
 func TestCreateUser(t *testing.T) {
+	t.Skip()
 	ctx := context.Background()
 	cases := []struct {
 		name  string

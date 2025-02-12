@@ -2,7 +2,14 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/go
 {
 	"name": "PGX TXPool",
+
 	"image": "mcr.microsoft.com/devcontainers/go:1.23-bookworm",
+	"features": {
+    	"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+	},
+	"runArgs": [
+		"--network=host"
+	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
