@@ -18,6 +18,15 @@ var srv *service.Service
 
 func TestMain(t *testing.T) {
 	ctx := context.Background()
+
+	// setup test containers
+	SetupTest(ctx)
+
+	// run tests
+	t.Run("TestCreateUser", TestCreateUser)
+}
+
+func SetupTest(ctx context.Context) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16-alpine",
 		ExposedPorts: []string{"5432/tcp"},
