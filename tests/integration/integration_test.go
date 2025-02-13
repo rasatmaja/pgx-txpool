@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	pgxtxpool "github.com/rasatmaja/pgx-txpool"
@@ -27,37 +26,48 @@ func TestMain(t *testing.T) {
 }
 
 func SetupTest(ctx context.Context) {
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:16-alpine",
-		ExposedPorts: []string{"5432/tcp"},
-		AutoRemove:   true,
-		Env: map[string]string{
-			"POSTGRES_USER":     "postgres",
-			"POSTGRES_PASSWORD": "postgres",
-			"POSTGRES_DB":       "postgres",
-		},
-		WaitingFor: wait.ForListeningPort("5432/tcp"),
-	}
+	var pgUsername, pgPassword, pgDatabase, pgHost, pgPort string
+	pgUsername = "postgres-user"
+	pgPassword = "postgres-password"
+	pgDatabase = "postgres-db"
+
 	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "postgres:16-alpine",
+			ExposedPorts: []string{"5432/tcp"},
+			AutoRemove:   true,
+			Env: map[string]string{
+				"POSTGRES_USER":     pgUsername,
+				"POSTGRES_PASSWORD": pgPassword,
+				"POSTGRES_DB":       pgDatabase,
+			},
+			WaitingFor: wait.ForListeningPort("5432/tcp"),
+		},
+		Started: true,
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	port, err := postgres.MappedPort(ctx, "5432")
+	// get hostname from generated test container
+	pgHost, err = postgres.Host(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(port.Port())
+	// get exposed port from generated test container
+	exposedPort, err := postgres.MappedPort(ctx, "5432")
+	if err != nil {
+		panic(err)
+	}
+
+	pgPort = exposedPort.Port()
 
 	// setup database
 	db := pgxtxpool.New(
-		pgxtxpool.SetHost("localhost", port.Port()),
-		pgxtxpool.SetCredential("postgres", "postgres"),
-		pgxtxpool.SetDatabase("postgres"),
+		pgxtxpool.SetHost(pgHost, pgPort),
+		pgxtxpool.SetCredential(pgUsername, pgPassword),
+		pgxtxpool.SetDatabase(pgDatabase),
 		pgxtxpool.WithSSLMode("disable"),
 		pgxtxpool.WithMaxConns(10),
 		pgxtxpool.WithMaxIdleConns("30s"),
