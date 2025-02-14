@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	pgxtxpool "github.com/rasatmaja/pgx-txpool"
@@ -22,6 +23,7 @@ func TestMain(t *testing.T) {
 	SetupTest(ctx)
 
 	// run tests
+	t.Run("TestMigration", TestMigration)
 	t.Run("TestCreateUser", TestCreateUser)
 }
 
@@ -80,6 +82,44 @@ func SetupTest(ctx context.Context) {
 
 	repo = repository.NewRepository(db)
 	srv = service.NewService(repo)
+}
+
+// TestMigration tests repository Migration method
+func TestMigration(t *testing.T) {
+	ctx := context.Background()
+	if err := repo.Migration(ctx); err != nil {
+		t.Errorf("failed to migrate: %v", err)
+	}
+
+	columnsUsers, err := repo.ShowColomns(ctx, "users")
+	if err != nil {
+		t.Errorf("failed to get columns: %v", err)
+	}
+
+	t.Log(fmt.Sprintf("table users: %v", columnsUsers))
+	if len(columnsUsers) != 3 {
+		t.Errorf("expected 3 columns, got %d", len(columnsUsers))
+	}
+
+	columnsTransactions, err := repo.ShowColomns(ctx, "transactions")
+	if err != nil {
+		t.Errorf("failed to get columns: %v", err)
+	}
+
+	t.Log(fmt.Sprintf("table transactions: %v", columnsTransactions))
+	if len(columnsTransactions) != 4 {
+		t.Errorf("expected 4 columns, got %d", len(columnsTransactions))
+	}
+
+	columnsTransactionsTransfer, err := repo.ShowColomns(ctx, "transactions_transfer")
+	if err != nil {
+		t.Errorf("failed to get columns: %v", err)
+	}
+
+	t.Log(fmt.Sprintf("table transactions_transfer: %v", columnsTransactionsTransfer))
+	if len(columnsTransactionsTransfer) != 4 {
+		t.Errorf("expected 4 columns, got %d", len(columnsTransactionsTransfer))
+	}
 }
 
 // TestCreateUser tests service CreateUser method

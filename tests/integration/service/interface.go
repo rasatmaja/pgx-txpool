@@ -12,7 +12,6 @@ type Repository interface {
 	CommitTx(ctx context.Context) error
 	RollbackTx(ctx context.Context) error
 	VerifyTX(ctx context.Context) error
-	Migration(ctx context.Context) error
 	CreateUser(ctx context.Context, user model.User) error
 	UpdateUserBalance(ctx context.Context, user model.User) error
 	CreateTransaction(ctx context.Context, transactions []model.Transaction) error
