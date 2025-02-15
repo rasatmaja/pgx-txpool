@@ -71,7 +71,7 @@ func SetupTest(ctx context.Context) {
 		pgxtxpool.SetCredential(pgUsername, pgPassword),
 		pgxtxpool.SetDatabase(pgDatabase),
 		pgxtxpool.WithSSLMode("disable"),
-		pgxtxpool.WithMaxConns(10),
+		pgxtxpool.WithMaxConns(20),
 		pgxtxpool.WithMaxIdleConns("30s"),
 		pgxtxpool.WithMaxConnLifetime("5m"),
 	)
@@ -124,7 +124,11 @@ func TestMigration(t *testing.T) {
 
 // TestCreateUser tests service CreateUser method
 func TestCreateUser(t *testing.T) {
-	t.Skip()
+
+	if repo == nil || srv == nil {
+		t.Skip("test skipped cause repository or service is nil")
+	}
+
 	ctx := context.Background()
 	cases := []struct {
 		name  string
@@ -207,14 +211,15 @@ func TestCreateUser(t *testing.T) {
 			t.Parallel()
 
 			err := srv.CreateUser(ctx, c.user, c.trx...)
-			if err != nil {
+			// TODO: Should assert specific error
+			if err != nil && !c.error {
 				t.Errorf("failed to create user: %v", err)
 			}
 		})
 	}
 
 	t.Run("check data integrity", func(t *testing.T) {
-		t.Parallel()
+		t.Skip()
 	})
 
 }
