@@ -219,7 +219,7 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	t.Run("check data integrity", func(t *testing.T) {
-		t.Skip()
+		t.Skip("not implemented yet")
 	})
 
 }

@@ -11,7 +11,8 @@ import (
 // Pool is a struct that wraps a pgx pool
 type Pool struct {
 	*pgxpool.Pool
-	txpool map[TxID]pgx.Tx
+	txpool     map[TxID]pgx.Tx
+	generateID func() TxID
 }
 
 // New will create a new connection pgx pool
@@ -25,8 +26,9 @@ func New(opts ...Option) *Pool {
 		panic(err)
 	}
 	return &Pool{
-		Pool:   pool,
-		txpool: make(map[TxID]pgx.Tx),
+		Pool:       pool,
+		txpool:     make(map[TxID]pgx.Tx),
+		generateID: generateID,
 	}
 }
 
@@ -41,7 +43,7 @@ func (p *Pool) BeginTX(ctx context.Context) (context.Context, error) {
 	}
 
 	// generate tx id
-	txID := TxID("123")
+	txID := p.generateID()
 
 	// save tx
 	p.txpool[txID] = tx
