@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package integration
 
 import (
@@ -89,6 +92,7 @@ func TestMigration(t *testing.T) {
 	ctx := context.Background()
 	if err := repo.Migration(ctx); err != nil {
 		t.Errorf("failed to migrate: %v", err)
+		t.FailNow()
 	}
 
 	columnsUsers, err := repo.ShowColomns(ctx, "users")
