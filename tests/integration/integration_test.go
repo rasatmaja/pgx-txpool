@@ -26,8 +26,8 @@ func TestMain(t *testing.T) {
 	SetupTest(ctx)
 
 	// run tests
-	t.Run("TestMigration", TestMigration)
-	t.Run("TestCreateUser", TestCreateUser)
+	t.Run("TestMigration", Migration)
+	t.Run("TestCreateUser", CreateUser)
 }
 
 func SetupTest(ctx context.Context) {
@@ -87,8 +87,8 @@ func SetupTest(ctx context.Context) {
 	srv = service.NewService(repo)
 }
 
-// TestMigration tests repository Migration method
-func TestMigration(t *testing.T) {
+// Migration tests repository Migration method
+func Migration(t *testing.T) {
 	ctx := context.Background()
 	if err := repo.Migration(ctx); err != nil {
 		t.Errorf("failed to migrate: %v", err)
@@ -126,8 +126,8 @@ func TestMigration(t *testing.T) {
 	}
 }
 
-// TestCreateUser tests service CreateUser method
-func TestCreateUser(t *testing.T) {
+// CreateUser tests service CreateUser method
+func CreateUser(t *testing.T) {
 
 	if repo == nil || srv == nil {
 		t.Skip("test skipped cause repository or service is nil")
