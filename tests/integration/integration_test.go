@@ -5,32 +5,36 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"testing"
+	"time"
 
 	pgxtxpool "github.com/rasatmaja/pgx-txpool"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/model"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/repository"
 	"github.com/rasatmaja/pgx-txpool/tests/integration/service"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var repo *repository.Repository
-var srv *service.Service
+type TestSuite struct {
+	repo *repository.Repository
+	srv  *service.Service
+}
 
 func TestMain(t *testing.T) {
 	ctx := context.Background()
 
+	suite := &TestSuite{}
 	// setup test containers
-	SetupTest(ctx)
+	assert.NotPanics(t, func() { suite.Setup(ctx) })
 
 	// run tests
-	t.Run("TestMigration", Migration)
-	t.Run("TestCreateUser", CreateUser)
+	t.Run("TestMigration", suite.Migration)
+	t.Run("TestCreateUser", suite.CreateUser)
 }
 
-func SetupTest(ctx context.Context) {
+func (ts *TestSuite) Setup(ctx context.Context) {
 	var pgUsername, pgPassword, pgDatabase, pgHost, pgPort string
 	pgUsername = "postgres-user"
 	pgPassword = "postgres-password"
@@ -46,7 +50,7 @@ func SetupTest(ctx context.Context) {
 				"POSTGRES_PASSWORD": pgPassword,
 				"POSTGRES_DB":       pgDatabase,
 			},
-			WaitingFor: wait.ForListeningPort("5432/tcp"),
+			WaitingFor: wait.ForListeningPort("5432/tcp").WithStartupTimeout(10 * time.Second),
 		},
 		Started: true,
 	})
@@ -83,55 +87,31 @@ func SetupTest(ctx context.Context) {
 		panic(err)
 	}
 
-	repo = repository.NewRepository(db)
-	srv = service.NewService(repo)
+	ts.repo = repository.NewRepository(db)
+	ts.srv = service.NewService(ts.repo)
 }
 
 // Migration tests repository Migration method
-func Migration(t *testing.T) {
+func (ts *TestSuite) Migration(t *testing.T) {
 	ctx := context.Background()
-	if err := repo.Migration(ctx); err != nil {
-		t.Errorf("failed to migrate: %v", err)
-		t.FailNow()
-	}
+	err := ts.repo.Migration(ctx)
+	assert.NoError(t, err, "failed execute migration")
 
-	columnsUsers, err := repo.ShowColomns(ctx, "users")
-	if err != nil {
-		t.Errorf("failed to get columns: %v", err)
-	}
+	columnsUsers, err := ts.repo.ShowColomns(ctx, "users")
+	assert.NoError(t, err, "failed to get columns users")
+	assert.ElementsMatch(t, []string{"id", "name", "balance"}, columnsUsers)
 
-	t.Log(fmt.Sprintf("table users: %v", columnsUsers))
-	if len(columnsUsers) != 3 {
-		t.Errorf("expected 3 columns, got %d", len(columnsUsers))
-	}
+	columnsTransactions, err := ts.repo.ShowColomns(ctx, "transactions")
+	assert.NoError(t, err, "failed to get columns transactions")
+	assert.ElementsMatch(t, []string{"id", "user_id", "type", "amount"}, columnsTransactions)
 
-	columnsTransactions, err := repo.ShowColomns(ctx, "transactions")
-	if err != nil {
-		t.Errorf("failed to get columns: %v", err)
-	}
-
-	t.Log(fmt.Sprintf("table transactions: %v", columnsTransactions))
-	if len(columnsTransactions) != 4 {
-		t.Errorf("expected 4 columns, got %d", len(columnsTransactions))
-	}
-
-	columnsTransactionsTransfer, err := repo.ShowColomns(ctx, "transactions_transfer")
-	if err != nil {
-		t.Errorf("failed to get columns: %v", err)
-	}
-
-	t.Log(fmt.Sprintf("table transactions_transfer: %v", columnsTransactionsTransfer))
-	if len(columnsTransactionsTransfer) != 4 {
-		t.Errorf("expected 4 columns, got %d", len(columnsTransactionsTransfer))
-	}
+	columnsTransactionsTransfer, err := ts.repo.ShowColomns(ctx, "transactions_transfer")
+	assert.NoError(t, err, "failed to get columns transactions_transfer")
+	assert.ElementsMatch(t, []string{"id", "transaction_origin_id", "transaction_destination_id", "amount"}, columnsTransactionsTransfer)
 }
 
 // CreateUser tests service CreateUser method
-func CreateUser(t *testing.T) {
-
-	if repo == nil || srv == nil {
-		t.Skip("test skipped cause repository or service is nil")
-	}
+func (ts *TestSuite) CreateUser(t *testing.T) {
 
 	ctx := context.Background()
 	cases := []struct {
@@ -214,11 +194,9 @@ func CreateUser(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := srv.CreateUser(ctx, c.user, c.trx...)
+			err := ts.srv.CreateUser(ctx, c.user, c.trx...)
 			// TODO: Should assert specific error
-			if err != nil && !c.error {
-				t.Errorf("failed to create user: %v", err)
-			}
+			assert.Equal(t, c.error, err != nil)
 		})
 	}
 
