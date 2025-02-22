@@ -13,6 +13,7 @@ type Repository interface {
 	RollbackTx(ctx context.Context) error
 	VerifyTX(ctx context.Context) error
 	CreateUser(ctx context.Context, user model.User) error
+	GetUsers(ctx context.Context) ([]model.User, error)
 	UpdateUserBalance(ctx context.Context, user model.User) error
 	CreateTransaction(ctx context.Context, transactions []model.Transaction) error
 	CreateTransactionTransfer(ctx context.Context, transactions []model.TransactionTransfer) error
