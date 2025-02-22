@@ -190,18 +190,38 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		},
 	}
 
+	userShouldCreated := []model.User{}
+	userShouldntCreated := []model.User{}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
+			// TODO: Should implement concurrent create users
 
 			err := ts.srv.CreateUser(ctx, c.user, c.trx...)
 			// TODO: Should assert specific error
 			assert.Equal(t, c.error, err != nil)
+
+			if c.error {
+				// collect users that shouldnt be created
+				userShouldntCreated = append(userShouldntCreated, c.user)
+				return
+			}
+
+			// collect users that should be created
+			userShouldCreated = append(userShouldCreated, c.user)
 		})
 	}
 
+	// TODO: Check data integrity should running after all 'create user test' executed
 	t.Run("check data integrity", func(t *testing.T) {
-		t.Skip("not implemented yet")
+
+		users, err := ts.srv.ListUser(ctx)
+		assert.NoError(t, err, "failed to get list users")
+
+		// check users that should be created
+		assert.Subset(t, users, userShouldCreated, "users on database not match with expected")
+
+		// check users that shouldnt be created
+		assert.NotSubset(t, users, userShouldntCreated, "users that shouldnt be created exist on database")
 	})
 
 }

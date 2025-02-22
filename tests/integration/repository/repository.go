@@ -47,6 +47,25 @@ func (r *Repository) CreateUser(ctx context.Context, user model.User) error {
 	return nil
 }
 
+// GetUsers --
+func (r *Repository) GetUsers(ctx context.Context) ([]model.User, error) {
+	var users []model.User
+	query := `SELECT id, name, balance FROM users`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return users, err
+	}
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(&user.ID, &user.Name, &user.Balance)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
 // UpdateUserBalance ---
 func (r *Repository) UpdateUserBalance(ctx context.Context, user model.User) error {
 	query := `UPDATE users SET balance = balance + $1 WHERE id = $2`
