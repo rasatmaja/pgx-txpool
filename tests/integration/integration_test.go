@@ -5,6 +5,7 @@ package integration
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -190,38 +191,45 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		},
 	}
 
-	userShouldCreated := []model.User{}
-	userShouldntCreated := []model.User{}
+	wg := new(sync.WaitGroup)
+	userShouldCreated := new(users)
+	userShouldntCreated := new(users)
+
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			// TODO: Should implement concurrent create users
+		wg.Add(1)
 
-			err := ts.srv.CreateUser(ctx, c.user, c.trx...)
-			// TODO: Should assert specific error
-			assert.Equal(t, c.error, err != nil)
+		go func() {
+			t.Run(c.name, func(t *testing.T) {
+				defer wg.Done()
 
-			if c.error {
-				// collect users that shouldnt be created
-				userShouldntCreated = append(userShouldntCreated, c.user)
-				return
-			}
+				err := ts.srv.CreateUser(ctx, c.user, c.trx...)
+				// TODO: Should assert specific error
+				assert.Equal(t, c.error, err != nil)
 
-			// collect users that should be created
-			userShouldCreated = append(userShouldCreated, c.user)
-		})
+				if c.error {
+					// collect users that shouldnt be created
+					userShouldntCreated.add(c.user)
+					return
+				}
+
+				// collect users that should be created
+				userShouldCreated.add(c.user)
+			})
+		}()
 	}
 
-	// TODO: Check data integrity should running after all 'create user test' executed
+	wg.Wait()
+
 	t.Run("check data integrity", func(t *testing.T) {
 
 		users, err := ts.srv.ListUser(ctx)
 		assert.NoError(t, err, "failed to get list users")
 
 		// check users that should be created
-		assert.Subset(t, users, userShouldCreated, "users on database not match with expected")
+		assert.Subset(t, users, userShouldCreated.get(), "users on database not match with expected")
 
 		// check users that shouldnt be created
-		assert.NotSubset(t, users, userShouldntCreated, "users that shouldnt be created exist on database")
+		assert.NotSubset(t, users, userShouldntCreated.get(), "users that shouldnt be created exist on database")
 	})
 
 }
