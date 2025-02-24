@@ -2,6 +2,7 @@ package pgxtxpool
 
 import (
 	"context"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -11,7 +12,7 @@ import (
 // Pool is a struct that wraps a pgx pool
 type Pool struct {
 	*pgxpool.Pool
-	txpool     map[TxID]pgx.Tx
+	txpool     sync.Map
 	generateID func() TxID
 }
 
@@ -27,9 +28,27 @@ func New(opts ...Option) *Pool {
 	}
 	return &Pool{
 		Pool:       pool,
-		txpool:     make(map[TxID]pgx.Tx),
 		generateID: generateID,
 	}
+}
+
+// storeTXConn will store a transaction to the pool
+func (p *Pool) storeTXConn(txID TxID, tx pgx.Tx) {
+	p.txpool.Store(txID, tx)
+}
+
+// getTXConn will get a transaction from the pool (sync.Map)
+// then return the transaction (pgx.Tx)
+func (p *Pool) getTXConn(txID TxID) (pgx.Tx, bool) {
+	tx, ok := p.txpool.Load(txID)
+	if ok {
+		return tx.(pgx.Tx), ok
+	}
+	return nil, false
+}
+
+func (p *Pool) deleteTXConn(txID TxID) {
+	p.txpool.Delete(txID)
 }
 
 // BeginTX will begin a prosgres transaction and create an ID
@@ -46,7 +65,7 @@ func (p *Pool) BeginTX(ctx context.Context) (context.Context, error) {
 	txID := p.generateID()
 
 	// save tx
-	p.txpool[txID] = tx
+	p.storeTXConn(txID, tx)
 
 	ctx = context.WithValue(ctx, ContextTxKey, txID)
 
@@ -60,12 +79,11 @@ func (p *Pool) CommitTX(ctx context.Context) error {
 		return ErrTxPoolIDNotFound
 	}
 
-	tx, ok := p.txpool[txID]
+	tx, ok := p.getTXConn(txID)
 	if !ok {
 		return ErrTxPoolNotFound
 	}
-
-	delete(p.txpool, txID)
+	p.deleteTXConn(txID)
 	return tx.Commit(ctx)
 }
 
@@ -76,12 +94,11 @@ func (p *Pool) RollbackTX(ctx context.Context) error {
 		return ErrTxPoolIDNotFound
 	}
 
-	tx, ok := p.txpool[txID]
+	tx, ok := p.getTXConn(txID)
 	if !ok {
 		return ErrTxPoolNotFound
 	}
-
-	delete(p.txpool, txID)
+	p.deleteTXConn(txID)
 	return tx.Rollback(ctx)
 }
 
@@ -93,7 +110,7 @@ func (p *Pool) Exec(ctx context.Context, sql string, arguments ...any) (commandT
 	// if transaction id is found in context
 	// then use exec from transaction
 	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
-		if tx, ok := p.txpool[txID]; ok {
+		if tx, ok := p.getTXConn(txID); ok {
 			return tx.Exec(ctx, sql, arguments...)
 		}
 	}
@@ -110,7 +127,7 @@ func (p *Pool) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, er
 	// if transaction id is found in context
 	// then use query from transaction
 	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
-		if tx, ok := p.txpool[txID]; ok {
+		if tx, ok := p.getTXConn(txID); ok {
 			return tx.Query(ctx, sql, args...)
 		}
 	}
@@ -127,7 +144,7 @@ func (p *Pool) VerifyTX(ctx context.Context) error {
 	if txID, ok := ctx.Value(ContextTxKey).(TxID); ok {
 		// if transaction id is found in context
 		// return error
-		if _, ok := p.txpool[txID]; ok {
+		if _, ok := p.getTXConn(txID); ok {
 			return ErrTxPoolTrxStillExistsInPool
 		}
 	}
