@@ -33,6 +33,7 @@ func TestMain(t *testing.T) {
 	// run tests
 	t.Run("TestMigration", suite.Migration)
 	t.Run("TestCreateUser", suite.CreateUser)
+	t.Run("TestTransferBalace", suite.TransferBalance)
 }
 
 func (ts *TestSuite) Setup(ctx context.Context) {
@@ -232,4 +233,51 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		assert.NotSubset(t, users, userShouldntCreated.get(), "users that shouldnt be created exist on database")
 	})
 
+}
+
+func (ts *TestSuite) TransferBalance(t *testing.T) {
+	ctx := context.Background()
+	cases := []struct {
+		name        string
+		error       bool
+		userTrx     []model.Transaction
+		transferTrx model.TransactionTransfer
+	}{
+		{
+			name: "transfer USR001 to USR003",
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX001",
+					UserID: "USR001",
+					Type:   "TRANSFER_OUT",
+					Amount: 500,
+				},
+				{
+					ID:     "TFTRX002",
+					UserID: "USR003",
+					Type:   "TRANSFER_IN",
+					Amount: 500,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF001",
+				TransactionOriginID:      "TFTRX001",
+				TransactionDestinationID: "TFTRX002",
+				Amount:                   500,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+
+			err := ts.srv.TransferBalance(ctx, c.userTrx, c.transferTrx)
+			// TODO: Should assert specific error
+			assert.Equal(t, c.error, err != nil)
+		})
+	}
+
+	t.Run("check data integrity", func(t *testing.T) {
+		t.Skip("not implemented yet")
+	})
 }
