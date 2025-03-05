@@ -337,6 +337,29 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 				Amount:                   200,
 			},
 		},
+		{
+			name: "transfer USR004 to USR001",
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX005",
+					UserID: "USR004",
+					Type:   "TRANSFER_OUT",
+					Amount: 300,
+				},
+				{
+					ID:     "TFTRX006",
+					UserID: "USR001",
+					Type:   "TRANSFER_IN",
+					Amount: 300,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF003",
+				TransactionOriginID:      "TFTRX005",
+				TransactionDestinationID: "TFTRX006",
+				Amount:                   300,
+			},
+		},
 	}
 
 	for _, c := range cases {
