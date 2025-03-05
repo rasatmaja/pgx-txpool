@@ -244,6 +244,54 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 		transferTrx model.TransactionTransfer
 	}{
 		{
+			name:  "failed transfer USR002 to USR001 (user not found)",
+			error: true,
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX001",
+					UserID: "USR002",
+					Type:   "TRANSFER_OUT",
+					Amount: 500,
+				},
+				{
+					ID:     "TFTRX002",
+					UserID: "USR001",
+					Type:   "TRANSFER_IN",
+					Amount: 500,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF001",
+				TransactionOriginID:      "TFTRX001",
+				TransactionDestinationID: "TFTRX002",
+				Amount:                   500,
+			},
+		},
+		{
+			name:  "failed transfer USR001 to USR003 cause by trx id not found",
+			error: true,
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX001",
+					UserID: "USR001",
+					Type:   "TRANSFER_OUT",
+					Amount: 500,
+				},
+				{
+					ID:     "TFTRX002",
+					UserID: "USR003",
+					Type:   "TRANSFER_IN",
+					Amount: 500,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF001",
+				TransactionOriginID:      "TFTRX00XX",
+				TransactionDestinationID: "TFTRX002",
+				Amount:                   500,
+			},
+		},
+		{
 			name: "transfer USR001 to USR003",
 			userTrx: []model.Transaction{
 				{
@@ -264,6 +312,52 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 				TransactionOriginID:      "TFTRX001",
 				TransactionDestinationID: "TFTRX002",
 				Amount:                   500,
+			},
+		},
+		{
+			name: "transfer USR004 to USR003",
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX003",
+					UserID: "USR004",
+					Type:   "TRANSFER_OUT",
+					Amount: 200,
+				},
+				{
+					ID:     "TFTRX004",
+					UserID: "USR003",
+					Type:   "TRANSFER_IN",
+					Amount: 200,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF002",
+				TransactionOriginID:      "TFTRX003",
+				TransactionDestinationID: "TFTRX004",
+				Amount:                   200,
+			},
+		},
+		{
+			name: "transfer USR004 to USR001",
+			userTrx: []model.Transaction{
+				{
+					ID:     "TFTRX005",
+					UserID: "USR004",
+					Type:   "TRANSFER_OUT",
+					Amount: 300,
+				},
+				{
+					ID:     "TFTRX006",
+					UserID: "USR001",
+					Type:   "TRANSFER_IN",
+					Amount: 300,
+				},
+			},
+			transferTrx: model.TransactionTransfer{
+				ID:                       "TF003",
+				TransactionOriginID:      "TFTRX005",
+				TransactionDestinationID: "TFTRX006",
+				Amount:                   300,
 			},
 		},
 	}
