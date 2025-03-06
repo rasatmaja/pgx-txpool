@@ -16,5 +16,7 @@ type Repository interface {
 	GetUsers(ctx context.Context) ([]model.User, error)
 	UpdateUserBalance(ctx context.Context, user model.User) error
 	CreateTransaction(ctx context.Context, transactions []model.Transaction) error
+	GetTransaction(ctx context.Context) ([]model.Transaction, error)
 	CreateTransactionTransfer(ctx context.Context, transactions []model.TransactionTransfer) error
+	GetTransactionTransfer(ctx context.Context) ([]model.TransactionTransfer, error)
 }

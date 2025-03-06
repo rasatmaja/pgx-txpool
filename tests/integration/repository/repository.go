@@ -103,6 +103,25 @@ func (r *Repository) CreateTransaction(ctx context.Context, transactions []model
 	return nil
 }
 
+// GetTransaction ---
+func (r *Repository) GetTransaction(ctx context.Context) ([]model.Transaction, error) {
+	var transactions []model.Transaction
+	query := `SELECT id, user_id, type, amount FROM transactions`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return transactions, err
+	}
+	for rows.Next() {
+		var transaction model.Transaction
+		err := rows.Scan(&transaction.ID, &transaction.UserID, &transaction.Type, &transaction.Amount)
+		if err != nil {
+			return transactions, err
+		}
+		transactions = append(transactions, transaction)
+	}
+	return transactions, nil
+}
+
 // CreateTransactionTransfer ---
 func (r *Repository) CreateTransactionTransfer(ctx context.Context, transactions []model.TransactionTransfer) error {
 	time.Sleep(utils.RandomDuration(20, 200, time.Millisecond))
@@ -115,4 +134,23 @@ func (r *Repository) CreateTransactionTransfer(ctx context.Context, transactions
 		}
 	}
 	return nil
+}
+
+// GetTransactionTransfer ---
+func (r *Repository) GetTransactionTransfer(ctx context.Context) ([]model.TransactionTransfer, error) {
+	var transactions []model.TransactionTransfer
+	query := `SELECT id, transaction_origin_id, transaction_destination_id, amount FROM transactions_transfer`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return transactions, err
+	}
+	for rows.Next() {
+		var transaction model.TransactionTransfer
+		err := rows.Scan(&transaction.ID, &transaction.TransactionOriginID, &transaction.TransactionDestinationID, &transaction.Amount)
+		if err != nil {
+			return transactions, err
+		}
+		transactions = append(transactions, transaction)
+	}
+	return transactions, nil
 }
