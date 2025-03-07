@@ -226,8 +226,6 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		users, err := ts.srv.ListUser(ctx)
 		assert.NoError(t, err, "failed to get list users")
 
-		t.Log("users", users)
-
 		// check users that should be created
 		assert.Subset(t, users, userShouldCreated.get(), "users on database not match with expected")
 
@@ -364,12 +362,29 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 		},
 	}
 
+	trxShouldCreated := new(transactions)
+	trxShouldntCreated := new(transactions)
+	transferShouldCreated := new(transfer)
+	transferShouldntCreated := new(transfer)
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 
 			err := ts.srv.TransferBalance(ctx, c.userTrx, c.transferTrx)
 			// TODO: Should assert specific error
 			assert.Equal(t, c.error, err != nil)
+
+			if c.error {
+				// collect transactions that shouldnt be created
+				trxShouldntCreated.add(c.userTrx...)
+				// collect transfers that shouldnt be created
+				transferShouldntCreated.add(c.transferTrx)
+				return
+			}
+
+			// collect transactions that should be created
+			trxShouldCreated.add(c.userTrx...)
+			// collect transfers that should be created
+			transferShouldCreated.add(c.transferTrx)
 		})
 	}
 
@@ -378,11 +393,36 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 		// get updated user balance
 		users, err := ts.srv.ListUser(ctx)
 		assert.NoError(t, err, "failed to get list users")
-		t.Log("users balance", users)
+		expectedBalance := []model.User{
+			{
+				ID:      "USR001",
+				Name:    "John Doe",
+				Balance: 800,
+			},
+			{
+				ID:      "USR003",
+				Name:    "Peterson",
+				Balance: 3700,
+			},
+			{
+				ID:      "USR004",
+				Name:    "Waller",
+				Balance: 3500,
+			},
+		}
+		// check users balance
+		assert.ElementsMatch(t, users, expectedBalance, "users balance on database not match with expected")
 
 		trx, tf, err := ts.srv.ListTransfersTransaction(ctx)
 		assert.NoError(t, err, "failed to get list transactions")
-		t.Log("transactions", trx)
-		t.Log("transfers", tf)
+
+		// check transactions that should be created
+		assert.Subset(t, trx, trxShouldCreated.get(), "transactions on database not match with expected")
+		// check transactions that shouldnt be created
+		assert.NotSubset(t, trx, trxShouldntCreated.get(), "transactions that shouldnt be created exist on database")
+		// check transfers that should be created
+		assert.Subset(t, tf, transferShouldCreated.get(), "transfers on database not match with expected")
+		// check transfers that shouldnt be created
+		assert.NotSubset(t, tf, transferShouldntCreated.get(), "transfers that shouldnt be created exist on database")
 	})
 }
