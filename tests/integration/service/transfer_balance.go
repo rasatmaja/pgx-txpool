@@ -48,3 +48,19 @@ func (s *Service) TransferBalance(ctx context.Context, trx []model.Transaction, 
 
 	return nil
 }
+
+// ListTransfersTransaction --
+func (s *Service) ListTransfersTransaction(ctx context.Context) ([]model.Transaction, []model.TransactionTransfer, error) {
+
+	transactions, err := s.repository.GetTransaction(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	transfers, err := s.repository.GetTransactionTransfer(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return transactions, transfers, nil
+}

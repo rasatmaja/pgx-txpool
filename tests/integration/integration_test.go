@@ -226,6 +226,8 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		users, err := ts.srv.ListUser(ctx)
 		assert.NoError(t, err, "failed to get list users")
 
+		t.Log("users", users)
+
 		// check users that should be created
 		assert.Subset(t, users, userShouldCreated.get(), "users on database not match with expected")
 
@@ -372,6 +374,15 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 	}
 
 	t.Run("check data integrity", func(t *testing.T) {
-		t.Skip("not implemented yet")
+
+		// get updated user balance
+		users, err := ts.srv.ListUser(ctx)
+		assert.NoError(t, err, "failed to get list users")
+		t.Log("users balance", users)
+
+		trx, tf, err := ts.srv.ListTransfersTransaction(ctx)
+		assert.NoError(t, err, "failed to get list transactions")
+		t.Log("transactions", trx)
+		t.Log("transfers", tf)
 	})
 }
