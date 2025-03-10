@@ -22,3 +22,36 @@ func (u *users) get() []model.User {
 	defer u.mx.Unlock()
 	return u.usrs
 }
+
+type transactions struct {
+	trxs []model.Transaction
+	mx   sync.Mutex
+}
+
+func (t *transactions) add(trxs ...model.Transaction) {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+	t.trxs = append(t.trxs, trxs...)
+}
+
+func (t *transactions) get() []model.Transaction {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+	return t.trxs
+}
+
+type transfer struct {
+	trfs []model.TransactionTransfer
+	mx   sync.Mutex
+}
+
+func (t *transfer) add(trfs ...model.TransactionTransfer) {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+	t.trfs = append(t.trfs, trfs...)
+}
+func (t *transfer) get() []model.TransactionTransfer {
+	t.mx.Lock()
+	defer t.mx.Unlock()
+	return t.trfs
+}
