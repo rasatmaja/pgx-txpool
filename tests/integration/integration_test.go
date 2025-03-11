@@ -5,6 +5,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -227,10 +228,16 @@ func (ts *TestSuite) CreateUser(t *testing.T) {
 		assert.NoError(t, err, "failed to get list users")
 
 		// check users that should be created
-		assert.Subset(t, users, userShouldCreated.get(), "users on database not match with expected")
+		assert.ElementsMatch(t, users, userShouldCreated.get(), "users on database not match with expected")
 
 		// check users that shouldnt be created
-		assert.NotSubset(t, users, userShouldntCreated.get(), "users that shouldnt be created exist on database")
+		// why not using assert.NotSubset ? because it has a limitation:
+		// it passes even when only some items from the list don't exist in the database
+		// in this case i need to ensure that ALL items in our list don't exist in the database
+		// ex: assert.NotSubset(t, []int{1, 2, 5}, []int{1, 4, 5}) -> it will PASS
+		for _, expUsr := range userShouldntCreated.get() {
+			assert.NotContains(t, users, expUsr, fmt.Sprintf("user %s that shouldnt be created exist on database", expUsr.ID))
+		}
 	})
 
 }
@@ -248,20 +255,20 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 			error: true,
 			userTrx: []model.Transaction{
 				{
-					ID:     "TFTRX001",
+					ID:     "TFTRX001X",
 					UserID: "USR002",
 					Type:   "TRANSFER_OUT",
 					Amount: 500,
 				},
 				{
-					ID:     "TFTRX002",
+					ID:     "TFTRX002X",
 					UserID: "USR001",
 					Type:   "TRANSFER_IN",
 					Amount: 500,
 				},
 			},
 			transferTrx: model.TransactionTransfer{
-				ID:                       "TF001",
+				ID:                       "TF001X",
 				TransactionOriginID:      "TFTRX001",
 				TransactionDestinationID: "TFTRX002",
 				Amount:                   500,
@@ -272,20 +279,20 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 			error: true,
 			userTrx: []model.Transaction{
 				{
-					ID:     "TFTRX001",
+					ID:     "TFTRX001Y",
 					UserID: "USR001",
 					Type:   "TRANSFER_OUT",
 					Amount: 500,
 				},
 				{
-					ID:     "TFTRX002",
+					ID:     "TFTRX002Y",
 					UserID: "USR003",
 					Type:   "TRANSFER_IN",
 					Amount: 500,
 				},
 			},
 			transferTrx: model.TransactionTransfer{
-				ID:                       "TF001",
+				ID:                       "TF001Y",
 				TransactionOriginID:      "TFTRX00XX",
 				TransactionDestinationID: "TFTRX002",
 				Amount:                   500,
@@ -413,16 +420,30 @@ func (ts *TestSuite) TransferBalance(t *testing.T) {
 		// check users balance
 		assert.ElementsMatch(t, users, expectedBalance, "users balance on database not match with expected")
 
-		trx, tf, err := ts.srv.ListTransfersTransaction(ctx)
+		allTrx, tf, err := ts.srv.ListTransfersTransaction(ctx)
 		assert.NoError(t, err, "failed to get list transactions")
 
+		// remove initial balance type from trx
+		var trx []model.Transaction
+		for _, t := range allTrx {
+			if t.Type != "INITIAL_BALANCE" {
+				trx = append(trx, t)
+			}
+		}
+
 		// check transactions that should be created
-		assert.Subset(t, trx, trxShouldCreated.get(), "transactions on database not match with expected")
+		assert.ElementsMatch(t, trx, trxShouldCreated.get(), "transactions on database not match with expected")
+
 		// check transactions that shouldnt be created
-		assert.NotSubset(t, trx, trxShouldntCreated.get(), "transactions that shouldnt be created exist on database")
+		for _, expTrx := range trxShouldntCreated.get() {
+			assert.NotContains(t, trx, expTrx, fmt.Sprintf("transaction %s shouldnt be created exist on database", expTrx.ID))
+		}
+
 		// check transfers that should be created
-		assert.Subset(t, tf, transferShouldCreated.get(), "transfers on database not match with expected")
+		assert.ElementsMatch(t, tf, transferShouldCreated.get(), "transfers on database not match with expected")
 		// check transfers that shouldnt be created
-		assert.NotSubset(t, tf, transferShouldntCreated.get(), "transfers that shouldnt be created exist on database")
+		for _, expTf := range transferShouldntCreated.get() {
+			assert.NotContains(t, tf, expTf, fmt.Sprintf("transfers %s that shouldnt be created exist on database", expTf.ID))
+		}
 	})
 }
