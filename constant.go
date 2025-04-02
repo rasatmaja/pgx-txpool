@@ -7,4 +7,4 @@ type TxID string
 type TxContextID string
 
 // ContextTxKey a key for a transaction ID in context
-const ContextTxKey TxContextID = "TX_POLL_ID"
+const ContextTxKey TxContextID = "TX_POOL_ID"
