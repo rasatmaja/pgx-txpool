@@ -1,6 +1,7 @@
 module github.com/rasatmaja/pgx-txpool/tests/integration
 
-go 1.22
+go 1.24.0
+
 toolchain go1.24.1
 
 replace github.com/rasatmaja/pgx-txpool => ../../
