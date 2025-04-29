@@ -73,6 +73,10 @@ func (r *Repository) GetUsers(ctx context.Context) ([]model.User, error) {
 		}
 		users = append(users, user)
 	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return users, nil
 }
 
@@ -119,6 +123,10 @@ func (r *Repository) GetTransaction(ctx context.Context) ([]model.Transaction, e
 		}
 		transactions = append(transactions, transaction)
 	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return transactions, nil
 }
 
@@ -151,6 +159,10 @@ func (r *Repository) GetTransactionTransfer(ctx context.Context) ([]model.Transa
 			return transactions, err
 		}
 		transactions = append(transactions, transaction)
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return transactions, nil
 }
